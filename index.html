@@ -565,11 +565,118 @@
       z-index: 0;
       letter-spacing: 0.05em;
     }
+
+    /* ── Access gate ── */
+    .mo-gate {
+      position: fixed;
+      inset: 0;
+      background: var(--govuk-grey-3);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .mo-gate-box {
+      background: var(--govuk-white);
+      padding: 3rem 2.5rem;
+      max-width: 420px;
+      width: 100%;
+      border-bottom: 5px solid var(--govuk-red);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .mo-gate-box h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--govuk-black);
+      margin-bottom: 0.5rem;
+    }
+    .mo-gate-box p {
+      color: var(--govuk-grey-1);
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .mo-gate-form {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .mo-gate-input {
+      flex: 1;
+      padding: 0.5rem;
+      font-family: inherit;
+      font-size: 1rem;
+      border: 2px solid var(--govuk-black);
+      border-radius: 0;
+      background: var(--govuk-white);
+      letter-spacing: 0.15em;
+    }
+    .mo-gate-input:focus {
+      outline: 3px solid var(--govuk-yellow);
+      box-shadow: inset 0 0 0 2px var(--govuk-black);
+    }
+    .mo-gate-error {
+      color: var(--govuk-red);
+      font-size: 0.9375rem;
+      margin-top: 0.75rem;
+      display: none;
+    }
+    .mo-gate.hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
 
+<!-- ── Access Gate ── -->
+<div class="mo-gate" id="mo-gate">
+  <div class="mo-gate-box">
+    <h2>Access Required</h2>
+    <p>This registry contains attendee information. Enter your access code to continue.</p>
+    <form class="mo-gate-form" id="mo-gate-form">
+      <input class="mo-gate-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" id="mo-gate-code" placeholder="Access code" autocomplete="off">
+      <button class="mo-btn mo-btn-primary" type="submit">Enter</button>
+    </form>
+    <div class="mo-gate-error" id="mo-gate-error">Incorrect access code. Try again.</div>
+  </div>
+</div>
+
 <div id="root"></div>
+
+<script>
+(function() {
+  // ── Access gate ──
+  var GATE_CODE = '80085';
+  var gateKey = 'nonsense_access';
+  var gate = document.getElementById('mo-gate');
+  var form = document.getElementById('mo-gate-form');
+  var input = document.getElementById('mo-gate-code');
+  var error = document.getElementById('mo-gate-error');
+
+  // If already authenticated this session, skip gate
+  if (localStorage.getItem(gateKey) === GATE_CODE) {
+    gate.classList.add('hidden');
+    return;
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (input.value.trim() === GATE_CODE) {
+      localStorage.setItem(gateKey, GATE_CODE);
+      gate.classList.add('hidden');
+    } else {
+      error.style.display = 'block';
+      input.value = '';
+      input.focus();
+      // Hide error after 3 seconds
+      setTimeout(function() { error.style.display = 'none'; }, 3000);
+    }
+  });
+
+  // Focus input on load
+  input.focus();
+})();
+</script>
 
 <script type="text/babel">
 
