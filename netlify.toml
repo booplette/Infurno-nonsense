@@ -1,9 +1,3 @@
-[[redirects]]
-  from = "https://nonsense.pigpup.farm/*"
-  to = "https://nonsense.ratheruseful.com"
-  status = 301
-  force = true
-
 [build]
   command = "echo 'no build step needed'"
   publish = "."
