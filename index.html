@@ -1077,42 +1077,78 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
     ...(task || {}),
   });
 
+  const [saving, setSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
   const setNum = (key) => (e) => setForm(f => ({ ...f, [key]: parseFloat(e.target.value) || 0 }));
 
-  const [saving, setSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSave = async () => {
+    console.log('[TaskModal] handleSave called', form);
     setSaving(true);
     setErrorMsg(null);
+    setShowSuccess(false);
     try {
       if (task) {
-        await onUpdate(task.id, form);
+        console.log('[TaskModal] Updating task', task.id, form);
+        const { data, error } = await supabase
+          .from('tasks')
+          .update(form)
+          .eq('id', task.id)
+          .select()
+          .single();
+        if (error) throw error;
+        console.log('[TaskModal] Update success', data);
       } else {
-        await onCreate(form);
+        console.log('[TaskModal] Creating task', form);
+        const { data, error } = await supabase
+          .from('tasks')
+          .insert([form])
+          .select()
+          .single();
+        if (error) throw error;
+        console.log('[TaskModal] Create success', data);
       }
       fetchTasks();
-      onClose();
+      setShowSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 800);
     } catch (err) {
-      console.error('Save failed:', err);
-      setErrorMsg('Save failed: ' + (err.message || 'Unknown error. Check Supabase connection.'));
+      console.error('[TaskModal] Save error:', err);
+      setErrorMsg('Failed to save: ' + err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  return (
-      <div className="mo-overlay" onClick={onClose}>
-        <div className="mo-modal" onClick={e => e.stopPropagation()}>
-          <div className="mo-modal-header">
-            <h2>{task ? 'Edit Task' : 'New Task'}</h2>
-            <button className="mo-modal-close" onClick={onClose} aria-label="Close">✕</button>
-          </div>
+  const handleClose = () => {
+    onClose();
+  };
 
-          <form onSubmit={handleSubmit}>
-          <div className="mo-modal-body">
+  return (
+    <div className="mo-overlay" onClick={handleClose}>
+      <div className="mo-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="mo-modal-header">
+          <h2>{task ? 'Edit Task' : 'New Task'}</h2>
+          <button className="mo-modal-close" onClick={handleClose} aria-label="Close">✕</button>
+        </div>
+
+        <div className="mo-modal-body">
+          {showSuccess && (
+            <div style={{
+              background: '#d4efdf',
+              color: '#00703c',
+              borderLeft: '5px solid #00703c',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              fontWeight: 700
+            }}>
+              {task ? '✓ Entry updated!' : '✓ Task created!'}
+            </div>
+          )}
+
           {errorMsg && (
             <div style={{
               background: '#f8d7da',
@@ -1125,96 +1161,108 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
               {errorMsg}
             </div>
           )}
+
+          <div className="mo-form-group">
+            <label className="mo-form-label" htmlFor="title">Title *</label>
+            <input className="mo-form-input" id="title" value={form.title} onChange={set('title')} required placeholder="What needs doing?" />
+          </div>
+
+          <div className="mo-form-group">
+            <label className="mo-form-label" htmlFor="description">Description</label>
+            <textarea className="mo-form-textarea" id="description" value={form.description} onChange={set('description')} placeholder="Details about the task…" />
+          </div>
+
+          <div className="mo-form-row">
             <div className="mo-form-group">
-              <label className="mo-form-label" htmlFor="title">Title *</label>
-              <input className="mo-form-input" id="title" value={form.title} onChange={set('title')} required placeholder="What needs doing?" />
+              <label className="mo-form-label" htmlFor="priority">Priority</label>
+              <select className="mo-form-select" id="priority" value={form.priority} onChange={set('priority')}>
+                <option value="critical">🔴 Critical</option>
+                <option value="high">🟠 High</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="low">⚪ Low</option>
+              </select>
             </div>
-
             <div className="mo-form-group">
-              <label className="mo-form-label" htmlFor="description">Description</label>
-              <textarea className="mo-form-textarea" id="description" value={form.description} onChange={set('description')} placeholder="Details about the task…" />
-            </div>
-
-            <div className="mo-form-row">
-              <div className="mo-form-group">
-                <label className="mo-form-label" htmlFor="priority">Priority</label>
-                <select className="mo-form-select" id="priority" value={form.priority} onChange={set('priority')}>
-                  <option value="critical">🔴 Critical</option>
-                  <option value="high">🟠 High</option>
-                  <option value="medium">🟡 Medium</option>
-                  <option value="low">⚪ Low</option>
-                </select>
-              </div>
-              <div className="mo-form-group">
-                <label className="mo-form-label" htmlFor="status">Status</label>
-                <select className="mo-form-select" id="status" value={form.status} onChange={set('status')}>
-                  <option value="backlog">Backlog</option>
-                  <option value="active">Active</option>
-                  <option value="complete">Complete</option>
-                  <option value="archived">Archived</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mo-form-row">
-              <div className="mo-form-group">
-                <label className="mo-form-label" htmlFor="owner">Owner</label>
-                <input className="mo-form-input" id="owner" value={form.owner} onChange={set('owner')} placeholder="Who's responsible?" />
-              </div>
-              <div className="mo-form-group">
-                <label className="mo-form-label" htmlFor="cost">Cost (£)</label>
-                <input className="mo-form-input" id="cost" type="number" step="0.01" min="0" value={form.cost} onChange={setNum('cost')} placeholder="0.00" />
-              </div>
-            </div>
-
-            <div className="mo-form-row">
-              <div className="mo-form-group">
-                <label className="mo-form-label" htmlFor="category">Category</label>
-                <input className="mo-form-input" id="category" value={form.category} onChange={set('category')} placeholder="e.g. Stage, Marketing" />
-              </div>
-              <div className="mo-form-group">
-                <label className="mo-form-label" htmlFor="due_date">Due Date</label>
-                <input className="mo-form-input" id="due_date" type="date" value={form.due_date} onChange={set('due_date')} />
-              </div>
-            </div>
-
-            <div className="mo-form-row">
-              <div className="mo-form-group">
-                <label className="mo-form-label" htmlFor="next_step">Next Step</label>
-                <input className="mo-form-input" id="next_step" value={form.next_step} onChange={set('next_step')} placeholder="What's the next action?" />
-              </div>
-              <div className="mo-form-group">
-                <label className="mo-form-label" htmlFor="next_step_owner">Next Step Owner</label>
-                <input className="mo-form-input" id="next_step_owner" value={form.next_step_owner} onChange={set('next_step_owner')} placeholder="Who owns it?" />
-              </div>
-            </div>
-
-            <div className="mo-form-group">
-              <label className="mo-form-label" htmlFor="notes">Internal Notes</label>
-              <textarea className="mo-form-textarea" id="notes" value={form.notes} onChange={set('notes')} placeholder="Private notes, context, links…" style={{ minHeight: '80px' }} />
+              <label className="mo-form-label" htmlFor="status">Status</label>
+              <select className="mo-form-select" id="status" value={form.status} onChange={set('status')}>
+                <option value="backlog">Backlog</option>
+                <option value="active">Active</option>
+                <option value="complete">Complete</option>
+                <option value="archived">Archived</option>
+              </select>
             </div>
           </div>
 
-          <div className="mo-modal-footer">
-            <div className="mo-form-actions">
-              <button className="mo-btn mo-btn-primary" type="submit" disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>
-                {saving ? (task ? 'Saving…' : 'Creating…') : (task ? 'Save Changes' : 'Create Task')}
-              </button>
-              {task && (
-                <button className="mo-btn mo-btn-danger" type="button" onClick={() => onDelete(task.id)} style={{ flex: 0 }}>
-                  Delete
-                </button>
-              )}
-              <button className="mo-btn mo-btn-secondary" type="button" onClick={onClose} style={{ flex: 0 }}>
-                Cancel
-              </button>
+          <div className="mo-form-row">
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="owner">Owner</label>
+              <input className="mo-form-input" id="owner" value={form.owner} onChange={set('owner')} placeholder="Who's responsible?" />
+            </div>
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="cost">Cost (£)</label>
+              <input className="mo-form-input" id="cost" type="number" step="0.01" min="0" value={form.cost} onChange={setNum('cost')} placeholder="0.00" />
             </div>
           </div>
-          </form>
+
+          <div className="mo-form-row">
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="category">Category</label>
+              <input className="mo-form-input" id="category" value={form.category} onChange={set('category')} placeholder="e.g. Stage, Marketing" />
+            </div>
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="due_date">Due Date</label>
+              <input className="mo-form-input" id="due_date" type="date" value={form.due_date} onChange={set('due_date')} />
+            </div>
+          </div>
+
+          <div className="mo-form-row">
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="next_step">Next Step</label>
+              <input className="mo-form-input" id="next_step" value={form.next_step} onChange={set('next_step')} placeholder="What's the next action?" />
+            </div>
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="next_step_owner">Next Step Owner</label>
+              <input className="mo-form-input" id="next_step_owner" value={form.next_step_owner} onChange={set('next_step_owner')} placeholder="Who owns it?" />
+            </div>
+          </div>
+
+          <div className="mo-form-group">
+            <label className="mo-form-label" htmlFor="notes">Internal Notes</label>
+            <textarea className="mo-form-textarea" id="notes" value={form.notes} onChange={set('notes')} placeholder="Private notes, context, links…" style={{ minHeight: '80px' }} />
+          </div>
+        </div>
+
+        <div className="mo-modal-footer">
+          <div className="mo-form-actions">
+            <button
+              className="mo-btn mo-btn-primary"
+              onClick={handleSave}
+              disabled={saving}
+              style={{ opacity: saving ? 0.6 : 1 }}
+            >
+              {saving ? (task ? 'Saving…' : 'Creating…') : (task ? 'Save Changes' : 'Create Task')}
+            </button>
+            {task && (
+              <button className="mo-btn mo-btn-danger" onClick={() => {
+                if (confirm('Delete this task? This cannot be undone.')) {
+                  onDelete(task.id);
+                  fetchTasks();
+                  onClose();
+                }
+              }} style={{ flex: 0 }}>
+                Delete
+              </button>
+            )}
+            <button className="mo-btn mo-btn-secondary" onClick={handleClose} style={{ flex: 0 }}>
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
-    );
+    </div>
+  );
 }
+
 
 // ─── Import Modal ───────────────────────────────────────
 function ImportModal({ onClose, onImport, result, onDrop, onDragOver, fileInputRef }) {
