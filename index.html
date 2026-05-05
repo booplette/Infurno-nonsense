@@ -855,7 +855,7 @@ function App() {
       if (sortBy === 'priority') return (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99);
       if (sortBy === 'status') return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
       if (sortBy === 'cost') return (b.cost || 0) - (a.cost || 0);
-      if (sortBy === 'date') return new Date(b.created_at) - new Date(a.created_at);
+      if (sortBy === 'date') return new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at);
       if (sortBy === 'owner') return (a.owner || '').localeCompare(b.owner || '');
       if (sortBy === 'next_step_owner') return (a.next_step_owner || '').localeCompare(b.next_step_owner || '');
       return 0;
@@ -1053,7 +1053,7 @@ function App() {
                 <option value="priority">Sort: Priority</option>
                 <option value="status">Sort: Status</option>
                 <option value="cost">Sort: Cost</option>
-                <option value="date">Sort: Date</option>
+                <option value="date">Sort: Last Updated (oldest first)</option>
                 <option value="owner">Sort: Owner</option>
                 <option value="next_step_owner">Sort: Next Step Owner</option>
               </select>
