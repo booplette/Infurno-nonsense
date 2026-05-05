@@ -274,6 +274,7 @@
     .mo-task:hover {
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
+    .mo-task.archived { opacity: 0.55; }
     .mo-task:focus-within {
       outline: 3px solid var(--govuk-yellow);
     }
@@ -335,7 +336,7 @@
     .mo-badge-status-backlog { background: var(--status-backlog); color: var(--govuk-grey-1); border: 2px solid var(--govuk-grey-2); }
     .mo-badge-status-active { background: var(--status-active); color: var(--govuk-white); }
     .mo-badge-status-complete { background: var(--status-complete); color: var(--govuk-white); }
-    .mo-badge-status-archived { background: var(--status-archived); color: var(--govuk-white); }
+    .mo-badge-status-archived { background: var(--status-archived); color: var(--govuk-grey-3); opacity: 0.7; }
 
     .mo-badge-owner {
       background: var(--govuk-grey-3);
@@ -706,6 +707,7 @@ function App() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
+  const [showArchived, setShowArchived] = useState(false);
   const [sortBy, setSortBy] = useState('priority');
   const [importResult, setImportResult] = useState(null);
   const fileInputRef = useRef(null);
@@ -771,6 +773,7 @@ function App() {
   const filteredTasks = tasks
     .filter(t => {
       if (filterStatus !== 'all' && t.status !== filterStatus) return false;
+      if (!showArchived && t.status === 'archived') return false;
       if (filterPriority !== 'all' && t.priority !== filterPriority) return false;
       if (search) {
         const s = search.toLowerCase();
@@ -958,6 +961,25 @@ function App() {
                 <option value="complete">Complete</option>
                 <option value="archived">Archived</option>
               </select>
+              <label style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.9375rem',
+                cursor: 'pointer',
+                userSelect: 'none',
+                padding: '0.25rem 0.5rem',
+                border: showArchived ? '2px solid var(--govuk-black)' : '2px solid var(--govuk-grey-2)',
+                background: showArchived ? 'var(--govuk-grey-3)' : 'var(--govuk-white)',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={e => setShowArchived(e.target.checked)}
+                  style={{ width: 'auto', marginRight: '0' }}
+                />
+                Show archived
+              </label>
               <select className="mo-filter" value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
                 <option value="all">All priorities</option>
                 <option value="critical">Critical</option>
@@ -985,7 +1007,7 @@ function App() {
               <ul className="mo-task-list">
                 {filteredTasks.map(task => (
                   <li key={task.id} style={{ position: 'relative' }}>
-                    <div className="mo-task" tabIndex="0" onClick={() => { setEditingTask(task); setModalOpen(true); }}>
+                    <div className={"mo-task" + (task.status === "archived" ? " archived" : "")} tabIndex="0" onClick={() => { setEditingTask(task); setModalOpen(true); }}>
                       <div className={`mo-task-priority-bar ${task.priority || 'medium'}`}></div>
                       <div className="mo-task-header">
                         <div>
