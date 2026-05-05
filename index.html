@@ -1041,8 +1041,17 @@ function App() {
                             {task.due_date && (
                               <span className="mo-badge mo-badge-low">⏰ {new Date(task.due_date).toLocaleDateString()}</span>
                             )}
-                          </div>
-                          {task.description && (
+                              {task.status !== 'archived' && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleArchive(task.id); }}
+                                  className="mo-btn mo-btn-secondary mo-btn-sm"
+                                  title="Archive this task"
+                                >
+                                  Archive
+                                </button>
+                              )}
+                            </div>
+                            {task.description && (
                             <div className="mo-task-desc">{task.description.length > 150 ? task.description.slice(0, 150) + '…' : task.description}</div>
                           )}
                           {task.next_step && (
