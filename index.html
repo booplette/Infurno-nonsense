@@ -703,6 +703,7 @@ function App() {
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [summariseModal, setSummariseModal] = useState(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -779,6 +780,48 @@ function App() {
       console.error('[Archive] Error:', err);
       alert('Failed to archive: ' + err.message);
     }
+  };
+
+  const generateSummary = (task) => {
+    const parts = [];
+    if (task.title) parts.push(task.title);
+    if (task.next_step) parts.push(task.next_step);
+    if (task.category) parts.push(task.category);
+    if (task.description) {
+      const desc = task.description;
+      if (desc.length > 150) parts.push(desc.slice(0, 150) + '…');
+      else parts.push(desc);
+    }
+    const summary = parts.slice(0, 2).join('. ') + (parts.length > 2 ? '.' : '');
+    return summary.charAt(0).toUpperCase() + summary.slice(1);
+  };
+
+  const handleSummarise = async (task) => {
+    console.log('[Summarise] Generating summary for', task.id);
+    let summary = generateSummary(task);
+    
+    // If no summary exists, generate and save it
+    if (!task.summary || task.summary.trim() === '') {
+      console.log('[Summarise] No existing summary, generating:', summary);
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .update({ summary: summary })
+          .eq('id', task.id)
+          .select()
+          .single();
+        if (error) throw error;
+        setTasks(prev => prev.map(t => t.id === task.id ? data : t));
+        task = data;
+      } catch (err) {
+        console.error('[Summarise] Error saving:', err);
+        alert('Failed to save summary: ' + err.message);
+        return;
+      }
+    }
+    
+    // Show summary modal
+    setSummariseModal(task);
   };
 
   const deleteTask = async (id) => {
@@ -1042,13 +1085,22 @@ function App() {
                               <span className="mo-badge mo-badge-low">⏰ {new Date(task.due_date).toLocaleDateString()}</span>
                             )}
                               {task.status !== 'archived' && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleArchive(task.id); }}
-                                  className="mo-btn mo-btn-secondary mo-btn-sm"
-                                  title="Archive this task"
-                                >
-                                  Archive
-                                </button>
+                                <>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleArchive(task.id); }}
+                                    className="mo-btn mo-btn-secondary mo-btn-sm"
+                                    title="Archive this task"
+                                  >
+                                    Archive
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleSummarise(task); }}
+                                    className="mo-btn mo-btn-secondary mo-btn-sm"
+                                    title="Generate summary for sharing"
+                                  >
+                                    Summarise
+                                  </button>
+                                </>
                               )}
                             </div>
                             {task.description && (
@@ -1095,6 +1147,14 @@ function App() {
         />
       )}
 
+      {/* Summarise Modal */}
+      {summariseModal && (
+        <SummariseModal
+          task={summariseModal}
+          onClose={() => setSummariseModal(null)}
+        />
+      )}
+
       {/* Import Modal */}
       {importModalOpen && (
         <ImportModal
@@ -1124,6 +1184,7 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
     due_date: '',
     next_step: '',
     next_step_owner: '',
+    summary: '',
     ...(task || {}),
   });
 
@@ -1313,6 +1374,73 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
   );
 }
 
+
+// ─── Summarise Modal ───────────────────────────────────────
+function SummariseModal({ task, onClose }) {
+  const [copied, setCopied] = useState(false);
+
+  const summaryText = `Ministry of Nonsense — Task Summary
+
+${task.title}
+Priority: ${task.priority} | Status: ${task.status}${task.owner ? ' | Owner: ' + task.owner : ''}${task.next_step ? ' | Next Step: ' + task.next_step : ''}
+
+Summary:
+${task.summary || 'No summary available.'}
+
+Please confirm if you wish to proceed with this task and let the Ministry know how we can be of service.`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(summaryText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="mo-overlay" onClick={onClose}>
+      <div className="mo-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="mo-modal-header">
+          <h2>Task Summary</h2>
+          <button className="mo-modal-close" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        <div className="mo-modal-body">
+          <div style={{
+            background: '#f3f2f1',
+            border: '2px solid #0b0c0c',
+            padding: '1.5rem',
+            fontFamily: 'monospace',
+            fontSize: '0.9375rem',
+            lineHeight: '1.6',
+            whiteSpace: 'pre-wrap',
+            maxHeight: '400px',
+            overflowY: 'auto'
+          }}>
+            {summaryText}
+          </div>
+
+          <div style={{ marginTop: '1.5rem' }}>
+            <button
+              className="mo-btn mo-btn-primary"
+              onClick={handleCopy}
+              style={{ width: '100%' }}
+            >
+              {copied ? '✓ Copied to Clipboard' : 'Copy to Clipboard'}
+            </button>
+          </div>
+        </div>
+
+        <div className="mo-modal-footer">
+          <div className="mo-form-actions">
+            <button className="mo-btn mo-btn-secondary" onClick={onClose} style={{ flex: 0 }}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Import Modal ───────────────────────────────────────
 function ImportModal({ onClose, onImport, result, onDrop, onDragOver, fileInputRef }) {

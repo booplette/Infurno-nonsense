@@ -15,6 +15,7 @@ CREATE TABLE tasks (
   due_date DATE,
   next_step TEXT DEFAULT '',
   next_step_owner TEXT DEFAULT '',
+  summary TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
