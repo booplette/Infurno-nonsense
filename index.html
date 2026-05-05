@@ -743,13 +743,20 @@ function App() {
   };
 
   const updateTask = async (id, updates) => {
+    // Remove updated_at — let the DB trigger handle it
+    const { updated_at, ...cleanUpdates } = updates;
+    console.log('updateTask:', { id, updates: cleanUpdates });
     const { data, error } = await supabase
       .from('tasks')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(cleanUpdates)
       .eq('id', id)
       .select()
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
+    console.log('updateTask success:', data);
     setTasks(prev => prev.map(t => t.id === id ? data : t));
   };
 
