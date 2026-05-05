@@ -10,3 +10,6 @@ deploy3.zip
 
 # Credentials (safety)
 .env
+
+# Local Netlify folder
+.netlify
