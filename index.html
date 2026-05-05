@@ -1111,6 +1111,7 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
             <button className="mo-modal-close" onClick={onClose} aria-label="Close">✕</button>
           </div>
 
+          <form onSubmit={handleSubmit}>
           <div className="mo-modal-body">
           {errorMsg && (
             <div style={{
@@ -1124,7 +1125,6 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
               {errorMsg}
             </div>
           )}
-          <form onSubmit={handleSubmit}>
             <div className="mo-form-group">
               <label className="mo-form-label" htmlFor="title">Title *</label>
               <input className="mo-form-input" id="title" value={form.title} onChange={set('title')} required placeholder="What needs doing?" />
@@ -1193,7 +1193,6 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
               <label className="mo-form-label" htmlFor="notes">Internal Notes</label>
               <textarea className="mo-form-textarea" id="notes" value={form.notes} onChange={set('notes')} placeholder="Private notes, context, links…" style={{ minHeight: '80px' }} />
             </div>
-          </form>
           </div>
 
           <div className="mo-modal-footer">
@@ -1211,6 +1210,7 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
               </button>
             </div>
           </div>
+          </form>
         </div>
       </div>
     );
