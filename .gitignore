@@ -1,0 +1,12 @@
+# Build artifacts
+deploy.zip
+deploy.tar.gz
+deploy_manual.zip
+deploy2.zip
+deploy3.zip
+
+# OS
+.DS_Store
+
+# Credentials (safety)
+.env

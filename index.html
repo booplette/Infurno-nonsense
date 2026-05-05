@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Infurno — Ministry of Nonsense</title>
+  <meta name="description" content="Task management system for the Ministry of Nonsense, Infurno Festival">
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- React -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Styles -->
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* GOV.UK Frontend colour palette */
+      --govuk-blue: #1d70b8;
+      --govuk-dark: #0b0c0c;
+      --govuk-grey-1: #505a5f;
+      --govuk-grey-2: #b1b4b6;
+      --govuk-grey-3: #f3f2f1;
+      --govuk-grey-4: #d8dde0;
+      --govuk-grey-5: #e0e0e0;
+      --govuk-grey-6: #f4f2f1;
+      --govuk-white: #ffffff;
+      --govuk-black: #0b0c0c;
+      --govuk-green: #00703c;
+      --govuk-light-green: #00703c;
+      --govuk-red: #d4351c;
+      --govuk-yellow: #ffdd00;
+      --govuk-light-blue: #5694ca;
+      --govuk-purple: #4c2c92;
+      --govuk-light-purple: #912b88;
+
+      /* Ministry of Nonsense brand accents */
+      --nonsense-red: #af1a13;
+      --nonsense-red-dark: #7a110c;
+      --nonsense-cream: #f4f2f1;
+
+      --priority-critical: #d4351c;
+      --priority-high: #f47738;
+      --priority-medium: #b3b3b3;
+      --priority-low: #949fa2;
+
+      --status-backlog: #f3f2f1;
+      --status-active: #1d70b8;
+      --status-complete: #00703c;
+      --status-archived: #949fa2;
+
+      --font-family: "GDS Transport",Arial,sans-serif;
+      --max-width: 960px;
+    }
+
+    @font-face {
+      font-family: 'GDS Transport';
+      src: url(https://service-manual.gov.uk/assets/fonts/GDS-Transport-Light-a37cb4bf-10f8-46b1-b67b-dd7744a72890.woff2) format('woff2');
+      font-weight: 300;
+    }
+    @font-face {
+      font-family: 'GDS Transport';
+      src: url(https://service-manual.gov.uk/assets/fonts/GDS-Transport-Regular-1bf0ea5a-3a19-4a89-8cd9-1499a0edcd72.woff2) format('woff2');
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: 'GDS Transport';
+      src: url(https://service-manual.gov.uk/assets/fonts/GDS-Transport-Bold-560fc262-f1a2-447f-a317-42304004b346.woff2) format('woff2');
+      font-weight: 700;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--govuk-grey-3);
+      color: var(--govuk-black);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    .mo-header {
+      background: var(--govuk-blue);
+      color: var(--govuk-white);
+      padding: 0.75rem 0;
+      border-bottom: 10px solid var(--govuk-black);
+    }
+    .mo-header-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 0 1.5rem;
+    }
+    .mo-brand {
+      display: flex;
+      flex-direction: column;
+    }
+    .mo-brand h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .mo-brand .mo-subtitle {
+      font-size: 1rem;
+      font-weight: 400;
+      opacity: 0.9;
+      margin-top: 0.25rem;
+    }
+    .mo-header-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* ── Buttons ── */
+    .mo-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      border: 2px solid transparent;
+      border-radius: 0;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .mo-btn:focus {
+      outline: 3px solid var(--govuk-yellow);
+      background: var(--govuk-yellow);
+      color: var(--govuk-black);
+      box-shadow: 0 -2px var(--govuk-yellow), 0 4px var(--govuk-black);
+      text-decoration: none;
+    }
+    .mo-btn-primary {
+      background: var(--govuk-green);
+      color: var(--govuk-white);
+      border-color: var(--govuk-green);
+      box-shadow: 0 2px 0 #004e2a;
+    }
+    .mo-btn-primary:hover {
+      background: #005a30;
+      border-color: #005a30;
+    }
+    .mo-btn-primary:active {
+      box-shadow: none;
+      transform: translateY(2px);
+    }
+    .mo-btn-secondary {
+      background: var(--govuk-white);
+      color: var(--govuk-black);
+      border-color: var(--govuk-grey-1);
+      box-shadow: 0 2px 0 var(--govuk-grey-2);
+    }
+    .mo-btn-secondary:hover {
+      background: var(--govuk-grey-6);
+    }
+    .mo-btn-secondary:active {
+      box-shadow: none;
+      transform: translateY(2px);
+    }
+    .mo-btn-danger {
+      background: var(--govuk-red);
+      color: var(--govuk-white);
+      border-color: var(--govuk-red);
+      box-shadow: 0 2px 0 #791e13;
+    }
+    .mo-btn-danger:hover {
+      background: #b9180e;
+      border-color: #b9180e;
+    }
+    .mo-btn-danger:active {
+      box-shadow: none;
+      transform: translateY(2px);
+    }
+    .mo-btn-sm {
+      padding: 0.25rem 0.625rem;
+      font-size: 0.9375rem;
+    }
+
+    /* ── Main layout ── */
+    .mo-main {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    /* ── Stats bar ── */
+    .mo-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0;
+      margin-bottom: 2rem;
+    }
+    .mo-stat-card {
+      background: var(--govuk-white);
+      padding: 1.5rem 1rem;
+      border-bottom: 5px solid var(--govuk-grey-4);
+      text-align: center;
+    }
+    .mo-stat-card .mo-stat-value {
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--govuk-black);
+    }
+    .mo-stat-card .mo-stat-label {
+      font-size: 0.9375rem;
+      color: var(--govuk-grey-1);
+      margin-top: 0.5rem;
+      font-weight: 400;
+    }
+    .mo-stat-card.critical { border-bottom-color: var(--govuk-red); }
+    .mo-stat-card.active { border-bottom-color: var(--govuk-blue); }
+    .mo-stat-card.complete { border-bottom-color: var(--govuk-green); }
+    .mo-stat-card.cost { border-bottom-color: var(--govuk-purple); }
+
+    /* ── Toolbar ── */
+    .mo-toolbar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .mo-search {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.5rem 0.75rem;
+      font-family: inherit;
+      font-size: 1rem;
+      border: 2px solid var(--govuk-dark);
+      border-radius: 0;
+      background: var(--govuk-white);
+    }
+    .mo-search:focus {
+      outline: 3px solid #ffeb3b;
+      box-shadow: inset 0 0 0 2px;
+    }
+    .mo-filter {
+      padding: 0.5rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      border: 2px solid var(--govuk-dark);
+      border-radius: 0;
+      background: var(--govuk-white);
+      min-width: 140px;
+    }
+
+    /* ── Task list ── */
+    .mo-task-list {
+      list-style: none;
+    }
+    .mo-task {
+      background: var(--govuk-white);
+      border: 1px solid var(--govuk-grey-4);
+      padding: 1.5rem;
+      margin-bottom: 0;
+      cursor: pointer;
+      transition: box-shadow 0.15s;
+      position: relative;
+    }
+    .mo-task:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .mo-task:focus-within {
+      outline: 3px solid var(--govuk-yellow);
+    }
+    .mo-task-priority-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+    }
+    .mo-task-priority-bar.critical { background: var(--govuk-red); }
+    .mo-task-priority-bar.high { background: var(--priority-high); }
+    .mo-task-priority-bar.medium { background: var(--priority-medium); }
+    .mo-task-priority-bar.low { background: var(--priority-low); }
+
+    .mo-task-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .mo-task-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      flex: 1;
+      color: var(--govuk-blue);
+      text-decoration: underline;
+      text-decoration-skip-ink: none;
+    }
+    .mo-task-meta {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+      align-items: center;
+    }
+    .mo-task-desc {
+      color: var(--govuk-grey-1);
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      line-height: 1.5;
+    }
+
+    /* ── Badges ── */
+    .mo-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 0;
+    }
+    .mo-badge-critical { background: var(--govuk-red); color: var(--govuk-white); }
+    .mo-badge-high { background: var(--priority-high); color: var(--govuk-white); }
+    .mo-badge-medium { background: var(--priority-medium); color: var(--govuk-black); }
+    .mo-badge-low { background: var(--priority-low); color: var(--govuk-white); }
+
+    .mo-badge-status-backlog { background: var(--status-backlog); color: var(--govuk-grey-1); border: 2px solid var(--govuk-grey-2); }
+    .mo-badge-status-active { background: var(--status-active); color: var(--govuk-white); }
+    .mo-badge-status-complete { background: var(--status-complete); color: var(--govuk-white); }
+    .mo-badge-status-archived { background: var(--status-archived); color: var(--govuk-white); }
+
+    .mo-badge-owner {
+      background: var(--govuk-grey-3);
+      color: var(--govuk-grey-1);
+      border: 2px solid var(--govuk-grey-2);
+    }
+
+    .mo-badge-cost {
+      background: var(--govuk-grey-3);
+      color: var(--govuk-black);
+      border: 2px solid var(--govuk-grey-2);
+      font-weight: 600;
+    }
+
+    /* ── Modal ── */
+    .mo-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      z-index: 1000;
+    }
+    .mo-modal {
+      background: var(--govuk-white);
+      max-width: 740px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+    }
+    .mo-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--govuk-grey-4);
+      flex-shrink: 0;
+    }
+    .mo-modal-header h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--govuk-black);
+    }
+    .mo-modal-body {
+      overflow-y: auto;
+      flex: 1 1 auto;
+      padding: 2rem 3rem 1.5rem 3rem;
+    }
+    .mo-modal-body form {
+      padding-top: 0.5rem;
+    }
+    .mo-modal-footer {
+      flex-shrink: 0;
+      background: var(--govuk-white);
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+    .mo-modal-close {
+      background: none;
+      border: 2px solid transparent;
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      font-family: inherit;
+      color: var(--govuk-black);
+    }
+    .mo-modal-close:focus {
+      outline: 3px solid var(--govuk-yellow);
+      background: var(--govuk-yellow);
+      color: var(--govuk-black);
+    }
+
+    /* ── Form ── */
+    .mo-form-group {
+      margin-bottom: 1.5rem;
+    }
+    .mo-form-label {
+      display: block;
+      font-weight: 700;
+      font-size: 1.125rem;
+      margin-bottom: 0.25rem;
+      color: var(--govuk-black);
+    }
+    .mo-form-hint {
+      color: var(--govuk-grey-1);
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      font-weight: 400;
+    }
+    .mo-form-input,
+    .mo-form-textarea,
+    .mo-form-select {
+      width: 100%;
+      padding: 0.5rem;
+      font-family: inherit;
+      font-size: 1rem;
+      border: 2px solid var(--govuk-black);
+      border-radius: 0;
+      background: var(--govuk-white);
+      color: var(--govuk-black);
+    }
+    .mo-form-input:focus,
+    .mo-form-textarea:focus,
+    .mo-form-select:focus {
+      outline: 3px solid var(--govuk-yellow);
+      box-shadow: inset 0 0 0 2px var(--govuk-black);
+    }
+    .mo-form-textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .mo-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .mo-form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--govuk-grey-4);
+    }
+
+    /* ── Import area ── */
+    .mo-import-area {
+      border: 2px dashed var(--govuk-grey-4);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .mo-import-area:hover,
+    .mo-import-area.dragover {
+      border-color: var(--govuk-blue);
+      background: #f0f4fa;
+    }
+    .mo-import-result {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-left: 5px solid var(--govuk-grey-4);
+    }
+
+    /* ── Empty state ── */
+    .mo-empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--govuk-grey-1);
+    }
+    .mo-empty h3 {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: var(--govuk-black);
+    }
+
+    /* ── Loading / error ── */
+    .mo-loading,
+    .mo-error {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+    .mo-error {
+      color: var(--govuk-red);
+    }
+    .mo-error pre {
+      text-align: left;
+      margin-top: 1rem;
+      font-size: 0.9375rem;
+      background: var(--govuk-grey-3);
+      padding: 1.5rem;
+      white-space: pre-wrap;
+      border: 1px solid var(--govuk-grey-4);
+    }
+
+    /* ── Footer ── */
+    .mo-footer {
+      background: var(--govuk-grey-3);
+      padding: 2rem 0;
+      margin-top: 4rem;
+      border-top: 5px solid var(--govuk-grey-4);
+    }
+    .mo-footer-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      text-align: center;
+    }
+    .mo-footer p {
+      font-size: 0.9375rem;
+      color: var(--govuk-grey-1);
+      margin-bottom: 0.5rem;
+    }
+    .mo-footer a {
+      color: var(--govuk-blue);
+      text-decoration: underline;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .mo-form-row {
+        grid-template-columns: 1fr;
+      }
+      .mo-modal {
+        padding: 1.25rem;
+      }
+      .mo-task-header {
+        flex-direction: column;
+      }
+    }
+
+    /* ── Stamp / decorative ── */
+    .mo-stamp {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      opacity: 0.03;
+      font-size: 8rem;
+      font-weight: 900;
+      color: var(--govuk-grey-4);
+      pointer-events: none;
+      transform: rotate(-15deg);
+      z-index: 0;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+// ─── Configuration ──────────────────────────────────────
+// Replace these with your Supabase credentials
+const SUPABASE_URL = 'https://cjgtyfretcoblphdxlis.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqZ3R5ZnJldGNvYmxwaGR4bGlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5NjY4MTMsImV4cCI6MjA5MzU0MjgxM30.bjZCRcdhoNXIBhh6er5BuzJ77lGDqJME4QBP0k05x8s';
+
+// ─── Supabase setup ─────────────────────────────────────
+let supabase;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+} catch (e) {
+  console.error('Supabase init failed — check URL and anon key');
+}
+
+// ─── App ────────────────────────────────────────────────
+const { useState, useEffect, useCallback, useRef } = React;
+
+function App() {
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [sortBy, setSortBy] = useState('priority');
+  const [importResult, setImportResult] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // ── Data fetching ──
+  const fetchTasks = useCallback(async () => {
+    if (!supabase) {
+      setError('Supabase not configured. Edit SUPABASE_URL and SUPABASE_ANON in index.html');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setTasks(data || []);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+  // ── CRUD operations ──
+  const createTask = async (task) => {
+    const { data, error } = await supabase.from('tasks').insert([task]).select().single();
+    if (error) throw error;
+    setTasks(prev => [data, ...prev]);
+  };
+
+  const updateTask = async (id, updates) => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    setTasks(prev => prev.map(t => t.id === id ? data : t));
+  };
+
+  const deleteTask = async (id) => {
+    if (!confirm('Delete this task? This cannot be undone.')) return;
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    if (error) throw error;
+    setTasks(prev => prev.filter(t => t.id !== id));
+  };
+
+  // ── Filtering & sorting ──
+  const filteredTasks = tasks
+    .filter(t => {
+      if (filterStatus !== 'all' && t.status !== filterStatus) return false;
+      if (filterPriority !== 'all' && t.priority !== filterPriority) return false;
+      if (search) {
+        const s = search.toLowerCase();
+        return (t.title || '').toLowerCase().includes(s) ||
+               (t.description || '').toLowerCase().includes(s) ||
+               (t.owner || '').toLowerCase().includes(s) ||
+               (t.category || '').toLowerCase().includes(s) ||
+               (t.next_step || '').toLowerCase().includes(s) ||
+               (t.next_step_owner || '').toLowerCase().includes(s);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      const statusOrder = { active: 0, backlog: 1, complete: 2, archived: 3 };
+
+      if (sortBy === 'priority') return (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99);
+      if (sortBy === 'status') return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+      if (sortBy === 'cost') return (b.cost || 0) - (a.cost || 0);
+      if (sortBy === 'date') return new Date(b.created_at) - new Date(a.created_at);
+      if (sortBy === 'owner') return (a.owner || '').localeCompare(b.owner || '');
+      if (sortBy === 'next_step_owner') return (a.next_step_owner || '').localeCompare(b.next_step_owner || '');
+      return 0;
+    });
+
+  // ── Stats ──
+  const stats = {
+    total: tasks.length,
+    critical: tasks.filter(t => t.priority === 'critical').length,
+    active: tasks.filter(t => t.status === 'active').length,
+    complete: tasks.filter(t => t.status === 'complete').length,
+    totalCost: tasks.reduce((sum, t) => sum + (t.cost || 0), 0),
+  };
+
+  // ── Import handler ──
+  const handleImport = (text) => {
+    const lines = text.split('\n').filter(l => l.trim());
+    const created = [];
+
+    for (const line of lines) {
+      // Try to parse: TITLE | DESCRIPTION | PRIORITY | OWNER | COST | CATEGORY
+      const parts = line.split('|').map(s => s.trim());
+
+      if (parts.length >= 2) {
+        created.push({
+          title: parts[0] || 'Untitled',
+          description: parts[1] || '',
+          priority: ['critical', 'high', 'medium', 'low'].includes(parts[2]) ? parts[2] : 'medium',
+          owner: parts[3] || 'Unassigned',
+          cost: parseFloat(parts[4]) || 0,
+          category: parts[5] || 'General',
+          next_step: parts[6] || '',
+          next_step_owner: parts[7] || '',
+          status: 'backlog',
+        });
+      }
+    }
+
+    if (created.length === 0) {
+      setImportResult({ success: false, message: 'No valid tasks found. Format: TITLE | DESCRIPTION | PRIORITY | OWNER | COST | CATEGORY' });
+      return;
+    }
+
+    created.forEach(t => createTask(t));
+    setImportResult({ success: true, count: created.length, message: `Imported ${created.length} tasks` });
+  };
+
+  // ── Drag and drop ──
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => handleImport(ev.target.result);
+      reader.readAsText(file);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => handleImport(ev.target.result);
+      reader.readAsText(file);
+    }
+  };
+
+  // ── Modal close on Escape ──
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        setModalOpen(false);
+        setImportModalOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
+
+  // ── Render helpers ──
+  const priorityBadge = (p) => (
+    <span className={`mo-badge mo-badge-${p}`}>{p}</span>
+  );
+
+  const statusBadge = (s) => (
+    <span className={`mo-badge mo-badge-status-${s}`}>{s}</span>
+  );
+
+  // ── Render ──
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Decorative stamp */}
+      <div className="mo-stamp">NONSENSE</div>
+
+      {/* Header */}
+      <header className="mo-header">
+        <div className="mo-header-inner">
+          <div className="mo-brand">
+            <h1>Infurno Festival</h1>
+            <span className="mo-subtitle">Ministry of Nonsense — Task Registry</span>
+          </div>
+          <div className="mo-header-actions">
+            <button className="mo-btn mo-btn-primary" onClick={() => { setEditingTask(null); setModalOpen(true); }}>
+              + New Task
+            </button>
+            <button className="mo-btn mo-btn-secondary" onClick={() => { setImportModalOpen(true); setImportResult(null); }}>
+              Import Data
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="mo-main">
+        {/* Loading / error */}
+        {loading && <div className="mo-loading"><p>Loading tasks…</p></div>}
+        {error && (
+          <div className="mo-error">
+            <h3>Connection Error</h3>
+            <pre>{error}</pre>
+            <button className="mo-btn mo-btn-danger" onClick={fetchTasks} style={{ marginTop: '1rem' }}>Retry</button>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* Stats */}
+            <div className="mo-stats">
+              <div className="mo-stat-card critical">
+                <div className="mo-stat-value">{stats.critical}</div>
+                <div className="mo-stat-label">Critical</div>
+              </div>
+              <div className="mo-stat-card active">
+                <div className="mo-stat-value">{stats.active}</div>
+                <div className="mo-stat-label">Active</div>
+              </div>
+              <div className="mo-stat-card complete">
+                <div className="mo-stat-value">{stats.complete}</div>
+                <div className="mo-stat-label">Complete</div>
+              </div>
+              <div className="mo-stat-card cost">
+                <div className="mo-stat-value">£{stats.totalCost.toFixed(0)}</div>
+                <div className="mo-stat-label">Total Cost</div>
+              </div>
+              <div className="mo-stat-card">
+                <div className="mo-stat-value">{stats.total}</div>
+                <div className="mo-stat-label">Total Tasks</div>
+              </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className="mo-toolbar">
+              <input
+                className="mo-search"
+                type="text"
+                placeholder="Search tasks…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <select className="mo-filter" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <option value="all">All statuses</option>
+                <option value="backlog">Backlog</option>
+                <option value="active">Active</option>
+                <option value="complete">Complete</option>
+                <option value="archived">Archived</option>
+              </select>
+              <select className="mo-filter" value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
+                <option value="all">All priorities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <select className="mo-filter" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                <option value="priority">Sort: Priority</option>
+                <option value="status">Sort: Status</option>
+                <option value="cost">Sort: Cost</option>
+                <option value="date">Sort: Date</option>
+                <option value="owner">Sort: Owner</option>
+                <option value="next_step_owner">Sort: Next Step Owner</option>
+              </select>
+            </div>
+
+            {/* Task list */}
+            {filteredTasks.length === 0 ? (
+              <div className="mo-empty">
+                <h3>No tasks found</h3>
+                <p>{tasks.length === 0 ? 'Create your first task or import data.' : 'Try adjusting your filters.'}</p>
+              </div>
+            ) : (
+              <ul className="mo-task-list">
+                {filteredTasks.map(task => (
+                  <li key={task.id} style={{ position: 'relative' }}>
+                    <div className="mo-task" tabIndex="0" onClick={() => { setEditingTask(task); setModalOpen(true); }}>
+                      <div className={`mo-task-priority-bar ${task.priority || 'medium'}`}></div>
+                      <div className="mo-task-header">
+                        <div>
+                          <div className="mo-task-title">{task.title || 'Untitled'}</div>
+                          <div className="mo-task-meta">
+                            {priorityBadge(task.priority)}
+                            {statusBadge(task.status)}
+                            {task.owner && <span className="mo-badge mo-badge-owner">👤 {task.owner}</span>}
+                            {task.next_step_owner && <span className="mo-badge mo-badge-owner" style={{ background: '#e8f0fe', color: '#1d70b8', borderColor: '#1d70b8' }}>→ {task.next_step_owner}</span>}
+                            {task.cost > 0 && <span className="mo-badge mo-badge-cost">£{task.cost.toFixed(2)}</span>}
+                            {task.category && <span className="mo-badge mo-badge-low">{task.category}</span>}
+                            {task.due_date && (
+                              <span className="mo-badge mo-badge-low">⏰ {new Date(task.due_date).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                          {task.description && (
+                            <div className="mo-task-desc">{task.description.length > 150 ? task.description.slice(0, 150) + '…' : task.description}</div>
+                          )}
+                          {task.next_step && (
+                            <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: '#f0f4fa', borderLeft: '3px solid var(--govuk-blue)', fontSize: '0.875rem' }}>
+                              Next: {task.next_step}
+                              {task.next_step_owner && (
+                                <span style={{ marginLeft: '0.5rem', padding: '0.125rem 0.375rem', background: 'var(--govuk-grey-4)', color: 'var(--govuk-grey-1)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                  → {task.next_step_owner}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="mo-footer">
+        <div className="mo-footer-inner">
+          <p>Ministry of Nonsense — Infurno Festival Task Registry</p>
+          <p>© {new Date().getFullYear()} Crown Copyright</p>
+        </div>
+      </footer>
+
+      {/* Task Modal */}
+      {modalOpen && (
+        <TaskModal
+          task={editingTask}
+          onClose={() => { setModalOpen(false); setEditingTask(null); }}
+          onCreate={createTask}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          fetchTasks={fetchTasks}
+        />
+      )}
+
+      {/* Import Modal */}
+      {importModalOpen && (
+        <ImportModal
+          onClose={() => setImportModalOpen(false)}
+          onImport={handleImport}
+          result={importResult}
+          onDrop={(e) => { e.currentTarget.classList.remove('dragover'); }}
+          onDragOver={(e) => e.preventDefault()}
+          fileInputRef={fileInputRef}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Task Modal ─────────────────────────────────────────
+function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) {
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    status: 'backlog',
+    owner: '',
+    cost: 0,
+    category: '',
+    notes: '',
+    due_date: '',
+    next_step: '',
+    next_step_owner: '',
+    ...(task || {}),
+  });
+
+  const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
+  const setNum = (key) => (e) => setForm(f => ({ ...f, [key]: parseFloat(e.target.value) || 0 }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (task) {
+      onUpdate(task.id, form);
+    } else {
+      onCreate(form);
+    }
+    fetchTasks();
+    onClose();
+  };
+
+  return (
+      <div className="mo-overlay" onClick={onClose}>
+        <div className="mo-modal" onClick={e => e.stopPropagation()}>
+          <div className="mo-modal-header">
+            <h2>{task ? 'Edit Task' : 'New Task'}</h2>
+            <button className="mo-modal-close" onClick={onClose} aria-label="Close">✕</button>
+          </div>
+
+          <div className="mo-modal-body">
+          <form onSubmit={handleSubmit}>
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="title">Title *</label>
+              <input className="mo-form-input" id="title" value={form.title} onChange={set('title')} required placeholder="What needs doing?" />
+            </div>
+
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="description">Description</label>
+              <textarea className="mo-form-textarea" id="description" value={form.description} onChange={set('description')} placeholder="Details about the task…" />
+            </div>
+
+            <div className="mo-form-row">
+              <div className="mo-form-group">
+                <label className="mo-form-label" htmlFor="priority">Priority</label>
+                <select className="mo-form-select" id="priority" value={form.priority} onChange={set('priority')}>
+                  <option value="critical">🔴 Critical</option>
+                  <option value="high">🟠 High</option>
+                  <option value="medium">🟡 Medium</option>
+                  <option value="low">⚪ Low</option>
+                </select>
+              </div>
+              <div className="mo-form-group">
+                <label className="mo-form-label" htmlFor="status">Status</label>
+                <select className="mo-form-select" id="status" value={form.status} onChange={set('status')}>
+                  <option value="backlog">Backlog</option>
+                  <option value="active">Active</option>
+                  <option value="complete">Complete</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mo-form-row">
+              <div className="mo-form-group">
+                <label className="mo-form-label" htmlFor="owner">Owner</label>
+                <input className="mo-form-input" id="owner" value={form.owner} onChange={set('owner')} placeholder="Who's responsible?" />
+              </div>
+              <div className="mo-form-group">
+                <label className="mo-form-label" htmlFor="cost">Cost (£)</label>
+                <input className="mo-form-input" id="cost" type="number" step="0.01" min="0" value={form.cost} onChange={setNum('cost')} placeholder="0.00" />
+              </div>
+            </div>
+
+            <div className="mo-form-row">
+              <div className="mo-form-group">
+                <label className="mo-form-label" htmlFor="category">Category</label>
+                <input className="mo-form-input" id="category" value={form.category} onChange={set('category')} placeholder="e.g. Stage, Marketing" />
+              </div>
+              <div className="mo-form-group">
+                <label className="mo-form-label" htmlFor="due_date">Due Date</label>
+                <input className="mo-form-input" id="due_date" type="date" value={form.due_date} onChange={set('due_date')} />
+              </div>
+            </div>
+
+            <div className="mo-form-row">
+              <div className="mo-form-group">
+                <label className="mo-form-label" htmlFor="next_step">Next Step</label>
+                <input className="mo-form-input" id="next_step" value={form.next_step} onChange={set('next_step')} placeholder="What's the next action?" />
+              </div>
+              <div className="mo-form-group">
+                <label className="mo-form-label" htmlFor="next_step_owner">Next Step Owner</label>
+                <input className="mo-form-input" id="next_step_owner" value={form.next_step_owner} onChange={set('next_step_owner')} placeholder="Who owns it?" />
+              </div>
+            </div>
+
+            <div className="mo-form-group">
+              <label className="mo-form-label" htmlFor="notes">Internal Notes</label>
+              <textarea className="mo-form-textarea" id="notes" value={form.notes} onChange={set('notes')} placeholder="Private notes, context, links…" style={{ minHeight: '80px' }} />
+            </div>
+          </form>
+          </div>
+
+          <div className="mo-modal-footer">
+            <div className="mo-form-actions">
+              <button className="mo-btn mo-btn-primary" type="submit">
+                {task ? 'Save Changes' : 'Create Task'}
+              </button>
+              {task && (
+                <button className="mo-btn mo-btn-danger" type="button" onClick={() => onDelete(task.id)} style={{ flex: 0 }}>
+                  Delete
+                </button>
+              )}
+              <button className="mo-btn mo-btn-secondary" type="button" onClick={onClose} style={{ flex: 0 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+}
+
+// ─── Import Modal ───────────────────────────────────────
+function ImportModal({ onClose, onImport, result, onDrop, onDragOver, fileInputRef }) {
+  const [text, setText] = useState('');
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setText(ev.target.result);
+      reader.readAsText(file);
+    }
+  };
+
+  return (
+    <div className="mo-overlay" onClick={onClose}>
+      <div className="mo-modal" onClick={e => e.stopPropagation()}>
+        <div className="mo-modal-header">
+          <h2>Import Data</h2>
+          <button className="mo-modal-close" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        <p className="mo-form-hint">Paste or drop your task data below. One task per line, pipe-separated:</p>
+        <p className="mo-form-hint"><strong>Format:</strong> TITLE | DESCRIPTION | PRIORITY | OWNER | COST | CATEGORY | NEXT STEP | NEXT STEP OWNER</p>
+        <p className="mo-form-hint" style={{ marginBottom: '1rem' }}>Supported: .txt, .csv files, or paste text directly.</p>
+
+        <div
+          className="mo-import-area"
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          onClick={() => fileInputRef.current && fileInputRef.current.click()}
+        >
+          <p><strong>Click to select file, or paste text below</strong></p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.csv,.tsv"
+            style={{ display: 'none' }}
+            onChange={handleFileSelect}
+          />
+        </div>
+
+        <div className="mo-form-group" style={{ marginTop: '1rem' }}>
+          <label className="mo-form-label" htmlFor="import-text">Or paste text directly:</label>
+          <textarea
+            className="mo-form-textarea"
+            id="import-text"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Building Stage B | erect scaffolding | high | Dave | 4500 | Infrastructure
+Sound Check | test mics and amps | medium | Sarah | 200 | Audio"
+            style={{ minHeight: '160px' }}
+          />
+        </div>
+
+        <div className="mo-form-actions">
+          <button className="mo-btn mo-btn-primary" type="button" onClick={() => onImport(text)}>
+            Import Tasks
+          </button>
+          <button className="mo-btn mo-btn-secondary" type="button" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+
+        {result && (
+          <div className={`mo-import-result`} style={{
+            background: result.success ? '#d4efdf' : '#f8d7da',
+            color: result.success ? '#00703c' : '#d4351c',
+            borderColor: result.success ? '#00703c' : '#d4351c',
+            fontWeight: 700,
+          }}>
+            {result.message}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Mount ──────────────────────────────────────────────
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+</script>
+</body>
+</html>
