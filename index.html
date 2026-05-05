@@ -1073,15 +1073,27 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
   const setNum = (key) => (e) => setForm(f => ({ ...f, [key]: parseFloat(e.target.value) || 0 }));
 
-  const handleSubmit = (e) => {
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (task) {
-      onUpdate(task.id, form);
-    } else {
-      onCreate(form);
+    setSaving(true);
+    setErrorMsg(null);
+    try {
+      if (task) {
+        await onUpdate(task.id, form);
+      } else {
+        await onCreate(form);
+      }
+      fetchTasks();
+      onClose();
+    } catch (err) {
+      console.error('Save failed:', err);
+      setErrorMsg('Save failed: ' + (err.message || 'Unknown error. Check Supabase connection.'));
+    } finally {
+      setSaving(false);
     }
-    fetchTasks();
-    onClose();
   };
 
   return (
@@ -1093,6 +1105,18 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
           </div>
 
           <div className="mo-modal-body">
+          {errorMsg && (
+            <div style={{
+              background: '#f8d7da',
+              color: '#d4351c',
+              borderLeft: '5px solid #d4351c',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              fontWeight: 700
+            }}>
+              {errorMsg}
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <div className="mo-form-group">
               <label className="mo-form-label" htmlFor="title">Title *</label>
@@ -1167,8 +1191,8 @@ function TaskModal({ task, onClose, onCreate, onUpdate, onDelete, fetchTasks }) 
 
           <div className="mo-modal-footer">
             <div className="mo-form-actions">
-              <button className="mo-btn mo-btn-primary" type="submit">
-                {task ? 'Save Changes' : 'Create Task'}
+              <button className="mo-btn mo-btn-primary" type="submit" disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>
+                {saving ? (task ? 'Saving…' : 'Creating…') : (task ? 'Save Changes' : 'Create Task')}
               </button>
               {task && (
                 <button className="mo-btn mo-btn-danger" type="button" onClick={() => onDelete(task.id)} style={{ flex: 0 }}>
