@@ -762,6 +762,25 @@ function App() {
     setTasks(prev => prev.map(t => t.id === id ? data : t));
   };
 
+  const handleArchive = async (id) => {
+    if (!confirm('Archive this task? It will be hidden unless you toggle "Show archived".')) return;
+    console.log('[Archive] Archiving task', id);
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({ status: 'archived' })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      console.log('[Archive] Success', data);
+      setTasks(prev => prev.map(t => t.id === id ? data : t));
+    } catch (err) {
+      console.error('[Archive] Error:', err);
+      alert('Failed to archive: ' + err.message);
+    }
+  };
+
   const deleteTask = async (id) => {
     if (!confirm('Delete this task? This cannot be undone.')) return;
     const { error } = await supabase.from('tasks').delete().eq('id', id);
@@ -1010,7 +1029,7 @@ function App() {
                     <div className={"mo-task" + (task.status === "archived" ? " archived" : "")} tabIndex="0" onClick={() => { setEditingTask(task); setModalOpen(true); }}>
                       <div className={`mo-task-priority-bar ${task.priority || 'medium'}`}></div>
                       <div className="mo-task-header">
-                        <div>
+                        <div style={{ flex: 1 }}>
                           <div className="mo-task-title">{task.title || 'Untitled'}</div>
                           <div className="mo-task-meta">
                             {priorityBadge(task.priority)}
